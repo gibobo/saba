@@ -3,6 +3,7 @@ image:
 - Visual Studio 2017
 - Visual Studio 2015
 - Visual Studio 2019
+- Visual Studio 2022
 environment:
   GLFW_URL: https://github.com/glfw/glfw.git
   GLFW_ROOT: c:\projects\dep\glfw
@@ -19,6 +20,8 @@ install:
     if ($env:APPVEYOR_BUILD_WORKER_IMAGE -eq "Visual Studio 2017") { $GEN="Visual Studio 15 2017 Win64"}
 
     if ($env:APPVEYOR_BUILD_WORKER_IMAGE -eq "Visual Studio 2019") { $GEN="Visual Studio 16 2019"}
+
+    if ($env:APPVEYOR_BUILD_WORKER_IMAGE -eq "Visual Studio 2022") { $GEN="Visual Studio 17 2022"}
 
 
     if (-Not (Test-Path $env:GLFW_ROOT)) {
@@ -55,6 +58,8 @@ build_script:
     if ($env:APPVEYOR_BUILD_WORKER_IMAGE -eq "Visual Studio 2017") { $GEN="Visual Studio 15 2017 Win64"}
 
     if ($env:APPVEYOR_BUILD_WORKER_IMAGE -eq "Visual Studio 2019") { $GEN="Visual Studio 16 2019"}
+
+    if ($env:APPVEYOR_BUILD_WORKER_IMAGE -eq "Visual Studio 2022") { $GEN="Visual Studio 17 2022"}
 
 
     mkdir build

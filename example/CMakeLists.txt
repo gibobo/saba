@@ -1,5 +1,15 @@
 # Example
 
+# simple_mmd_viewer
+add_executable(simple_mmd_viewer
+    simple_mmd_viewer.cpp
+    resource_opengl/GL_ShaderProgram.cpp
+    resource_opengl/AppContext.cpp
+    resource_opengl/Model.cpp
+    resource_opengl/saba_gles2.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../external/gl3w/src/gl3w.c
+)
+
 # simple_mmd_viewer_glfw
 add_executable(simple_mmd_viewer_glfw
     simple_mmd_viewer_glfw.cpp
@@ -19,6 +29,7 @@ if(UNIX)
     list(APPEND simple_mmd_viewer_glfw_LIBRARIES ${CMAKE_DL_LIBS})
 endif()
 target_link_libraries(simple_mmd_viewer_glfw ${simple_mmd_viewer_glfw_LIBRARIES})
+target_link_libraries(simple_mmd_viewer ${simple_mmd_viewer_glfw_LIBRARIES})
 
 add_custom_command(TARGET simple_mmd_viewer_glfw POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory

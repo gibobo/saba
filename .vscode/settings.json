@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "*.py": "python",
+        "iostream": "cpp",
+        "string": "cpp",
+        "memory": "cpp",
+        "map": "cpp",
+        "xstring": "cpp"
+    }
+}
