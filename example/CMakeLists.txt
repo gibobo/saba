@@ -37,6 +37,12 @@ add_custom_command(TARGET simple_mmd_viewer_glfw POST_BUILD
     $<TARGET_FILE_DIR:simple_mmd_viewer_glfw>/resource
 )
 
+add_custom_command(TARGET simple_mmd_viewer POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_CURRENT_SOURCE_DIR}/../viewer/Saba/Viewer/resource
+    $<TARGET_FILE_DIR:simple_mmd_viewer>/resource
+)
+
 # simple_mmd_viewer_dx11
 if(WIN32)
     add_executable(simple_mmd_viewer_dx11

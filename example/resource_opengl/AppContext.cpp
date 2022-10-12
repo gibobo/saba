@@ -240,3 +240,37 @@ Texture AppContext::GetTexture(const std::string &texturePath)
 		return (*it).second;
 	}
 }
+
+void AppContext::UpdateTransparentFBO()
+{
+	if (m_enableTransparentWindow == false)
+		return;
+
+	glDisable(GL_MULTISAMPLE);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glClearColor(0, 0, 0, 1);
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_transparentFbo);
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, m_transparentMSAAFbo);
+	glDrawBuffer(GL_BACK);
+	glBlitFramebuffer(0, 0, m_screenWidth, m_screenHeight, 0, 0, m_screenWidth, m_screenHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+
+	glDisable(GL_DEPTH_TEST);
+	glBindVertexArray(m_copyVAO);
+#if _WIN32
+	glUseProgram(m_copyTransparentWindowShader);
+#else // !_WIN32
+	glUseProgram(m_copyShader);
+	glEnable(GL_BLEND);
+	glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ZERO, GL_ONE_MINUS_SRC_ALPHA);
+#endif
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, m_transparentFboColorTex);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glBindVertexArray(0);
+	glUseProgram(0);
+	glBindTexture(GL_TEXTURE_2D, 0);
+}

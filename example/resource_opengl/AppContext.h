@@ -63,6 +63,7 @@ struct AppContext
 	void Clear();
 
 	void SetupTransparentFBO();
+	void UpdateTransparentFBO();
 
 	Texture GetTexture(const std::string &texturePath);
 };

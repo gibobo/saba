@@ -4,13 +4,11 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 
-struct Input
-{
-	std::string m_modelPath;
-	std::vector<std::string> m_vmdPaths;
-};
-
-void NewCamera(glm::vec3 &eyes, glm::vec3 &center, glm::vec2 angles = glm::vec2(0), glm::vec3 shift = glm::vec3(0))
+void NewCamera(
+	glm::vec3 &eyes,
+	glm::vec3 &center,
+	glm::vec2 angles = glm::vec2(0),
+	glm::vec3 shift = glm::vec3(0))
 {
 	angles = angles * glm::pi<float>() / 180.0f;
 	glm::vec3 direction = eyes - center;
@@ -29,18 +27,20 @@ void NewCamera(glm::vec3 &eyes, glm::vec3 &center, glm::vec2 angles = glm::vec2(
 	center = center + glm::vec3(shift.x, shift.y, 0) / 15.f;
 }
 
-saba_gles2::~saba_gles2()
+saba_gles2::~saba_gles2(void)
 {
 	appContext.Clear();
 }
 
-void saba_gles2::SetScreenSize(int width, int height)
+void saba_gles2::SetScreenSize(
+	int width,
+	int height)
 {
 	appContext.m_screenWidth = width;
 	appContext.m_screenHeight = height;
 }
 
-void saba_gles2::Draw()
+void saba_gles2::Draw(void)
 {
 	for (auto &model : models)
 	{
@@ -55,10 +55,17 @@ void saba_gles2::Draw()
 	}
 }
 
-void saba_gles2::Evaluate(float ElapsedTime)
+void saba_gles2::Evaluate(
+	float ElapsedTime,
+	float fps)
 {
+	appContext.m_elapsed = ElapsedTime;
+	appContext.m_animTime += ElapsedTime;
+
+	// Setup camera
 	if (appContext.m_vmdCameraAnim)
 	{
+		appContext.m_vmdCameraAnim->Evaluate(appContext.m_animTime * fps);
 		const auto mmdCam = appContext.m_vmdCameraAnim->GetCamera();
 		saba::MMDLookAtCamera lookAtCam(mmdCam);
 		eyes = lookAtCam.m_eye;
@@ -70,22 +77,12 @@ void saba_gles2::Evaluate(float ElapsedTime)
 		NewCamera(eyes, center, newCamera_angles, newCamera_shift);
 
 	appContext.m_viewMat = glm::lookAt(eyes, center, up);
-	appContext.m_projMat = glm::perspectiveFovRH(fov, float(appContext.m_screenWidth), float(appContext.m_screenHeight), 1.0f, 10000.0f);
-
-	appContext.m_elapsed = ElapsedTime;
-	appContext.m_animTime += ElapsedTime;
-	if (appContext.m_vmdCameraAnim)
-		appContext.m_vmdCameraAnim->Evaluate(appContext.m_animTime * 30.0f);
-
-	// Update Vertices
-	for (int i = 0; i < models.size(); i++)
-		models[i].Update(appContext);
+	appContext.m_projMat = glm::perspectiveFovRH(fov, (float)appContext.m_screenWidth, (float)appContext.m_screenHeight, 1.0f, 10000.0f);
 }
 
-bool saba_gles2::Setup(std::vector<std::string> &args)
+bool saba_gles2::Parse(std::vector<std::string> &args)
 {
 	Input currentInput;
-	std::vector<Input> inputModels;
 	for (auto argIt = args.begin(); argIt != args.end(); ++argIt)
 	{
 		const auto &arg = (*argIt);
@@ -113,10 +110,20 @@ bool saba_gles2::Setup(std::vector<std::string> &args)
 			currentInput.m_vmdPaths.push_back((*argIt));
 		}
 		else if (arg == "-transparent")
-			enableTransparentWindow = true;
+		{
+			appContext.m_enableTransparentWindow = true;
+		}
 	}
 	if (!currentInput.m_modelPath.empty())
 		inputModels.emplace_back(currentInput);
+
+	return true;
+}
+
+bool saba_gles2::Setup(void)
+{
+	if (inputModels.empty())
+		return false;
 
 	if (!appContext.Setup())
 	{
@@ -124,7 +131,6 @@ bool saba_gles2::Setup(std::vector<std::string> &args)
 		return false;
 	}
 
-	appContext.m_enableTransparentWindow = enableTransparentWindow;
 	// Load MMD model
 	for (const auto &input : inputModels)
 	{
@@ -197,4 +203,26 @@ bool saba_gles2::Setup(std::vector<std::string> &args)
 		models.emplace_back(std::move(model));
 	}
 	return true;
+}
+
+int saba_gles2::GetMsaaSamples(void)
+{
+	return appContext.m_msaaSamples;
+}
+
+bool saba_gles2::IsEnableTransparent(void)
+{
+	return appContext.m_enableTransparentWindow;
+}
+
+void saba_gles2::SetupTransparent(void)
+{
+	if (appContext.m_enableTransparentWindow)
+		appContext.SetupTransparentFBO();
+}
+
+void saba_gles2::UpdateTransparent(void)
+{
+	if (appContext.m_enableTransparentWindow)
+		appContext.UpdateTransparentFBO();
 }
