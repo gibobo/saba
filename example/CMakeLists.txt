@@ -1,5 +1,6 @@
 # Example
 
+if (NOT CMAKE_TOOLCHAIN_FILE)
 # simple_mmd_viewer
 add_executable(simple_mmd_viewer
     simple_mmd_viewer.cpp
@@ -36,12 +37,40 @@ add_custom_command(TARGET simple_mmd_viewer_glfw POST_BUILD
     ${CMAKE_CURRENT_SOURCE_DIR}/../viewer/Saba/Viewer/resource
     $<TARGET_FILE_DIR:simple_mmd_viewer_glfw>/resource
 )
+else()
+find_package (EGL)
+find_package (GLES)
 
-add_custom_command(TARGET simple_mmd_viewer POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${CMAKE_CURRENT_SOURCE_DIR}/../viewer/Saba/Viewer/resource
-    $<TARGET_FILE_DIR:simple_mmd_viewer>/resource
+# simple_mmd_viewer
+add_executable(mmd
+    simple_mmd_viewer_fsl.cpp
+    resource_opengl/GL_ShaderProgram.cpp
+    resource_opengl/AppContext.cpp
+    resource_opengl/Model.cpp
+    resource_opengl/saba_gles2.cpp
+    resource_fsl/fsl_egl.c
 )
+
+target_compile_definitions(mmd
+    PRIVATE
+        -D_GLIBCXX_USE_NANOSLEEP
+        -D_GLIBCXX_USE_SCHED_YIELD
+        -DEGL_API_FB
+        -DGL_GLEXT_PROTOTYPES
+)
+
+target_link_libraries(mmd
+    EGL::EGL
+    ${GLES_LIBRARY}
+    ${CMAKE_DL_LIBS}
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${BULLET_LIBRARIES}
+    Saba
+)
+
+install(TARGETS mmd DESTINATION home/root)
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../viewer/Saba/Viewer/resource DESTINATION home/root)
+endif()
 
 # simple_mmd_viewer_dx11
 if(WIN32)

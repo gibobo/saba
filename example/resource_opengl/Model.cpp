@@ -1,8 +1,6 @@
 #include "Model.h"
 #include "GL_ShaderProgram.h"
 #include <glm/glm.hpp>
-// #include <GLES2/gl2.h>
-// #include <GLES2/gl2ext.h>
 #include <Saba/Base/Time.h>
 #include <Saba/Model/MMD/PMDModel.h>
 #include <Saba/Model/MMD/PMXModel.h>

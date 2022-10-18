@@ -2,11 +2,11 @@
     "cmake.debugConfig": {
         "args": [
             "-model",
-            "D:/AVM/MMD/Yukihana_Lamy/Yukihana_Lamy.pmx",
+            "resource/pmx/Tokoyami_Towa/Tokoyami_Towa.pmx",
             "-vmd",
-            "D:/AVM/MMD/Addiction_Tda.vmd",
+            "resource/vmd/Addiction_Tda.vmd",
             "-vmd",
-            "D:/AVM/MMD/Addiction_Camera_ver1.01.vmd",
+            "resource/vmd/Addiction_Camera_ver1.01.vmd",
             "-transparent"
         ]
     },

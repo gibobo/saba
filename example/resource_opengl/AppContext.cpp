@@ -43,7 +43,7 @@ bool AppContext::Setup()
 	glBindTexture(GL_TEXTURE_2D, m_dummyShadowDepthTex);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, 1, 1, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
 	glBindTexture(GL_TEXTURE_2D, 0);
-
+#if _WIN32
 	// Create Copy Transparent Window Shader (only windows)
 	m_copyTransparentWindowShader = CreateShaderProgram(
 		saba::PathUtil::Combine(m_shaderDir, "quad.vert"),
@@ -57,8 +57,8 @@ bool AppContext::Setup()
 		saba::PathUtil::Combine(m_shaderDir, "copy.frag"));
 
 	m_copyShaderTex = glGetUniformLocation(m_copyShader, "u_Tex");
-
 	glGenVertexArrays(1, &m_copyVAO);
+#endif
 
 	return true;
 }
@@ -85,7 +85,7 @@ void AppContext::Clear()
 	}
 	m_dummyColorTex = 0;
 	m_dummyShadowDepthTex = 0;
-
+#if _WIN32
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	if (m_transparentFbo != 0)
 	{
@@ -119,10 +119,69 @@ void AppContext::Clear()
 	{
 		glDeleteVertexArrays(1, &m_copyVAO);
 	}
-
+#endif
 	m_vmdCameraAnim.reset();
 }
 
+Texture AppContext::GetTexture(const std::string &texturePath)
+{
+	auto it = m_textures.find(texturePath);
+	if (it == m_textures.end())
+	{
+		stbi_set_flip_vertically_on_load(true);
+		saba::File file;
+		if (!file.Open(texturePath))
+		{
+			return Texture{0, false};
+		}
+		int x, y, comp;
+		int ret = stbi_info_from_file(file.GetFilePointer(), &x, &y, &comp);
+		if (ret == 0)
+		{
+			return Texture{0, false};
+		}
+
+		GLuint tex;
+		glGenTextures(1, &tex);
+		glBindTexture(GL_TEXTURE_2D, tex);
+
+		int reqComp = 0;
+		bool hasAlpha = false;
+		if (comp != 4)
+		{
+			uint8_t *image = stbi_load_from_file(file.GetFilePointer(), &x, &y, &comp, STBI_rgb);
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, x, y, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+			stbi_image_free(image);
+			hasAlpha = false;
+		}
+		else
+		{
+			uint8_t *image = stbi_load_from_file(file.GetFilePointer(), &x, &y, &comp, STBI_rgb_alpha);
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
+			stbi_image_free(image);
+			hasAlpha = true;
+		}
+#if _WIN32
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+#endif
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		glBindTexture(GL_TEXTURE_2D, 0);
+
+		m_textures[texturePath] = Texture{tex, hasAlpha};
+
+		return m_textures[texturePath];
+	}
+	else
+	{
+		return (*it).second;
+	}
+}
+
+#if _WIN32
 void AppContext::SetupTransparentFBO()
 {
 	// Setup FBO
@@ -185,62 +244,6 @@ void AppContext::SetupTransparentFBO()
 	glEnable(GL_MULTISAMPLE);
 }
 
-Texture AppContext::GetTexture(const std::string &texturePath)
-{
-	auto it = m_textures.find(texturePath);
-	if (it == m_textures.end())
-	{
-		stbi_set_flip_vertically_on_load(true);
-		saba::File file;
-		if (!file.Open(texturePath))
-		{
-			return Texture{0, false};
-		}
-		int x, y, comp;
-		int ret = stbi_info_from_file(file.GetFilePointer(), &x, &y, &comp);
-		if (ret == 0)
-		{
-			return Texture{0, false};
-		}
-
-		GLuint tex;
-		glGenTextures(1, &tex);
-		glBindTexture(GL_TEXTURE_2D, tex);
-
-		int reqComp = 0;
-		bool hasAlpha = false;
-		if (comp != 4)
-		{
-			uint8_t *image = stbi_load_from_file(file.GetFilePointer(), &x, &y, &comp, STBI_rgb);
-			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, x, y, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-			stbi_image_free(image);
-			hasAlpha = false;
-		}
-		else
-		{
-			uint8_t *image = stbi_load_from_file(file.GetFilePointer(), &x, &y, &comp, STBI_rgb_alpha);
-			glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
-			stbi_image_free(image);
-			hasAlpha = true;
-		}
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-		glBindTexture(GL_TEXTURE_2D, 0);
-
-		m_textures[texturePath] = Texture{tex, hasAlpha};
-
-		return m_textures[texturePath];
-	}
-	else
-	{
-		return (*it).second;
-	}
-}
-
 void AppContext::UpdateTransparentFBO()
 {
 	if (m_enableTransparentWindow == false)
@@ -274,3 +277,14 @@ void AppContext::UpdateTransparentFBO()
 	glUseProgram(0);
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
+
+#else
+void AppContext::SetupTransparentFBO()
+{
+}
+
+void AppContext::UpdateTransparentFBO()
+{
+}
+
+#endif

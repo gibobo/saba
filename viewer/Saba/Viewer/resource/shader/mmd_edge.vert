@@ -1,7 +1,7 @@
-#version 140
+#version 100
 
-in vec3 in_Pos;
-in vec3 in_Nor;
+attribute vec3 in_Pos;
+attribute vec3 in_Nor;
 
 uniform mat4 u_WV;
 uniform mat4 u_WVP;

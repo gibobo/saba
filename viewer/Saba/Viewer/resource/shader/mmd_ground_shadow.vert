@@ -1,7 +1,7 @@
-#version 140
+#version 100
 
 // Input
-in vec3	in_Pos;
+attribute vec3	in_Pos;
 
 // Uniform
 uniform	mat4	u_WVP;
