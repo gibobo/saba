@@ -48,14 +48,19 @@ int main(int argc, char **argv)
         return 1;
     }
     ///////////////////////////////////////////////////////////////////////////////////
-    static const EGLint s_configAttribs[] =
+    const EGLint s_configAttribs[] =
         {
-            EGL_RED_SIZE, 5,
-            EGL_GREEN_SIZE, 6,
-            EGL_BLUE_SIZE, 5,
-            EGL_ALPHA_SIZE, EGL_DONT_CARE,
-            EGL_SAMPLES, 0,
+            EGL_RED_SIZE, 8,
+            EGL_GREEN_SIZE, 8,
+            EGL_BLUE_SIZE, 8,
+            EGL_ALPHA_SIZE, 8,
+            EGL_SAMPLES, 2,
             EGL_DEPTH_SIZE, 24,
+            EGL_NONE};
+
+    const EGLint ContextAttribList[] =
+        {
+            EGL_CONTEXT_CLIENT_VERSION, 2,
             EGL_NONE};
 
     EGLint numconfigs;
@@ -71,7 +76,6 @@ int main(int argc, char **argv)
     assert(eglNativeWindow);
     eglsurface = eglCreateWindowSurface(egldisplay, eglconfig, eglNativeWindow, NULL);
     assert(eglGetError() == EGL_SUCCESS);
-    EGLint ContextAttribList[] = {EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE};
     eglcontext = eglCreateContext(egldisplay, eglconfig, EGL_NO_CONTEXT, ContextAttribList);
     assert(eglGetError() == EGL_SUCCESS);
     eglMakeCurrent(egldisplay, eglsurface, eglsurface, eglcontext);
@@ -93,12 +97,24 @@ int main(int argc, char **argv)
     const double elapsed_min = 1.0 / 30.0;
     signal(SIGINT, sig_handler);
     signal(SIGTERM, sig_handler);
+    unsigned int count = 0;
+    double rec_time = GetTime();
+    double saveTime = rec_time;
+    double now;
     while (RUN)
     {
-        double time = GetTime();
-        static double saveTime = time;
-        double elapsed = time - saveTime;
-        saveTime = time;
+        now = GetTime();
+        double elapsed = now - saveTime;
+        double deltaTime = now - rec_time;
+        count++;
+        if (deltaTime > 10.0)
+        {
+            double fps = (double)count / deltaTime;
+            printf("[FPS] %.2lf\n", fps);
+            count = 0;
+            rec_time = now;
+        }
+        saveTime = now;
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
         mmd.Evaluate(elapsed < elapsed_min ? elapsed : elapsed_min);
