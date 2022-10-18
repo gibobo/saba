@@ -1,10 +1,10 @@
-#version 140
+#version 100
 
-out vec4 out_Color;
+precision lowp 	float;
 
 uniform vec4 u_EdgeColor;
 
 void main()
 {
-	out_Color = u_EdgeColor;
+	gl_FragColor = u_EdgeColor;
 }

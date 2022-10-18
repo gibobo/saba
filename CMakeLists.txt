@@ -15,17 +15,34 @@ option (SABA_FORCE_GLFW_BUILD "Force glfw build." off)
 option (SABA_ENABLE_EXAMPLE_VULKAN "Build vulakn's example." off)
 
 set (BULLET_ROOT ${SABA_BULLET_ROOT})
+find_package (Bullet)
 
-find_package (OpenGL REQUIRED)
-find_package (Bullet REQUIRED)
+if (NOT CMAKE_TOOLCHAIN_FILE)
+    find_package (OpenGL REQUIRED)
+    if (NOT SABA_FORCE_GLFW_BUILD)
+        set (GLFW_ROOT ${SABA_GLFW_ROOT})
+        find_package (GLFW)
+    endif ()
 
-if (NOT SABA_FORCE_GLFW_BUILD)
-    set (GLFW_ROOT ${SABA_GLFW_ROOT})
-    find_package (GLFW)
+    if (NOT GLFW_FOUND)
+        set (SABA_FORCE_GLFW_BUILD on CACHE BOOL "" FORCE)
+    endif ()
 endif ()
 
-if (NOT GLFW_FOUND)
-    set (SABA_FORCE_GLFW_BUILD on CACHE BOOL "" FORCE)
+if (NOT BULLET_FOUND)
+    if(MSVC)
+        set(USE_MSVC_RUNTIME_LIBRARY_DLL ON CACHE BOOL "Use MSVC Runtime Library DLL (/MD or /MDd)" FORCE)
+    endif ()
+    set(INSTALL_LIBS OFF CACHE BOOL "Set when you want to install libraries" FORCE)
+    set(INSTALL_CMAKE_FILES OFF CACHE BOOL "Install generated CMake files" FORCE)
+    set(BUILD_CPU_DEMOS OFF CACHE BOOL "Build original Bullet CPU examples" FORCE)
+    set(BUILD_OPENGL3_DEMOS OFF CACHE BOOL "Set when you want to build the OpenGL3+ demos" FORCE)
+    set(BUILD_BULLET2_DEMOS OFF CACHE BOOL "Set when you want to build the Bullet 2 demos" FORCE)
+    set(BUILD_UNIT_TESTS OFF CACHE BOOL "Build Unit Tests" FORCE)
+    set(BUILD_EXTRAS OFF CACHE BOOL "Set when you want to build the extras" FORCE)
+    add_subdirectory(external/bullet3)
+    set(BULLET_LIBRARIES "Bullet3Common;BulletDynamics;BulletSoftBody;BulletCollision;BulletInverseDynamics;LinearMath")
+    set(BULLET_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/external/bullet3/src)
 endif ()
 
 if (SABA_FORCE_GLFW_BUILD)
@@ -72,21 +89,24 @@ endif()
 add_subdirectory(external)
 
 add_subdirectory(src)
-add_subdirectory(viewer)
-add_subdirectory(gtests)
 
-add_executable(saba_viewer saba_viewer.cpp)
-set (saba_viewer_LIBRARIES SabaViewer)
-if (UNIX)
-    list (APPEND saba_viewer_LIBRARIES ${CMAKE_DL_LIBS})
-endif ()
-target_link_libraries(saba_viewer ${saba_viewer_LIBRARIES})
+if (GLFW_FOUND)
+    add_subdirectory(viewer)
+    add_subdirectory(gtests)
 
-add_custom_command(TARGET saba_viewer POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${CMAKE_CURRENT_SOURCE_DIR}/viewer/Saba/Viewer/resource
-    ${CMAKE_CURRENT_BINARY_DIR}/resource
-)
+    add_executable(saba_viewer saba_viewer.cpp)
+    set (saba_viewer_LIBRARIES SabaViewer)
+    if (UNIX)
+        list (APPEND saba_viewer_LIBRARIES ${CMAKE_DL_LIBS})
+    endif ()
+    target_link_libraries(saba_viewer ${saba_viewer_LIBRARIES})
+
+    add_custom_command(TARGET saba_viewer POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/viewer/Saba/Viewer/resource
+        ${CMAKE_CURRENT_BINARY_DIR}/resource
+    )
+endif()
 
 add_executable(mmd2obj mmd2obj.cpp)
 target_link_libraries(mmd2obj Saba)

@@ -1,5 +1,8 @@
 build
+.build
 /mmd2obj.dir
 /mmd2obj.dir
 /x64
 /saba_viewer.dir
+/viewer/Saba/Viewer/resource/pmx
+/viewer/Saba/Viewer/resource/vmd
