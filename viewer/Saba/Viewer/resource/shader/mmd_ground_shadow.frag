@@ -1,7 +1,7 @@
 #version 100
-precision lowp 	float;
+precision lowp float;
 
-uniform vec4	u_ShadowColor;
+uniform vec4 u_ShadowColor;
 
 void main()
 {

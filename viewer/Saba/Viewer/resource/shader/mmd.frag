@@ -1,5 +1,5 @@
 #version 100
-precision lowp 	float;
+precision lowp float;
 
 varying vec3 vs_Pos;
 varying vec3 vs_Nor;

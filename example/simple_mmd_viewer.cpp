@@ -85,7 +85,7 @@ bool SampleMain(std::vector<std::string> &args)
         saveTime = time;
 
         mmd.SetupTransparent();
-        glClearColor(0.6f, 0.8f, 1.0f, 1.0f);
+        glClearColor(1.0f, 0.8f, 0.75f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
         int width, height;

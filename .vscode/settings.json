@@ -2,7 +2,7 @@
     "cmake.debugConfig": {
         "args": [
             "-model",
-            "resource/pmx/MiraiAkari/MiraiAkari_v1.0.pmx",
+            "resource/pmx/takane_lui/takane_lui.pmx",
             "-vmd",
             "resource/vmd/Addiction_Tda.vmd",
             "-vmd",

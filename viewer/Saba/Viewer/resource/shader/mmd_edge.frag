@@ -1,6 +1,5 @@
 #version 100
-
-precision lowp 	float;
+precision lowp float;
 
 uniform vec4 u_EdgeColor;
 

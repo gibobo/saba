@@ -91,7 +91,7 @@ int main(int argc, char **argv)
     if (!mmd.Setup())
         return 1;
 
-    glClearColor(0.6f, 0.8f, 1.0f, 1.0f);
+    glClearColor(1.0f, 0.8f, 0.75f, 1.0f);
     glViewport(0, 0, screen_width, screen_height);
     mmd.SetScreenSize(screen_width, screen_height);
     const double elapsed_min = 1.0 / 30.0;
