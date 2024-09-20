@@ -1,4 +1,4 @@
-//
+﻿//
 // Copyright(c) 2016-2019 benikabocha.
 // Distributed under the MIT License (http://opensource.org/licenses/MIT)
 //
