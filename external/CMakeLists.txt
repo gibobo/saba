@@ -25,3 +25,6 @@ add_subdirectory (fcpp)
 
 # lua
 add_subdirectory (lua)
+
+# gl3w
+add_subdirectory (gl3w)

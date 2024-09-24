@@ -1,75 +1,79 @@
 # Example
 
 if (NOT CMAKE_TOOLCHAIN_FILE)
-# simple_mmd_viewer
-add_executable(simple_mmd_viewer
-    simple_mmd_viewer.cpp
-    resource_opengl/GL_ShaderProgram.cpp
-    resource_opengl/AppContext.cpp
-    resource_opengl/Model.cpp
-    resource_opengl/saba_gles2.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../external/gl3w/src/gl3w.c
-)
+    find_package(Threads)
+    set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+    set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+    set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+    # simple_mmd_viewer
+    add_executable(simple_mmd_viewer
+        simple_mmd_viewer.cpp
+        resource_opengl/GL_ShaderProgram.cpp
+        resource_opengl/AppContext.cpp
+        resource_opengl/Model.cpp
+        resource_opengl/saba_gles2.cpp
+    )
 
-# simple_mmd_viewer_glfw
-add_executable(simple_mmd_viewer_glfw
-    simple_mmd_viewer_glfw.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../external/gl3w/src/gl3w.c
-)
+    # simple_mmd_viewer_glfw
+    add_executable(simple_mmd_viewer_glfw
+        simple_mmd_viewer_glfw.cpp
+    )
+    set(simple_mmd_viewer_libs 
+        Saba
+        gl3w
+        glfw
+        ${OPENGL_LIBRARY}
+        ${CMAKE_DL_LIBS}
+        ${CMAKE_THREAD_LIBS_INIT}
+        )
+    message("${simple_mmd_viewer_libs}")
+    target_link_libraries(simple_mmd_viewer_glfw 
+        PUBLIC
+            ${simple_mmd_viewer_libs}
+    )
+    target_link_libraries(simple_mmd_viewer 
+        PUBLIC
+            ${simple_mmd_viewer_libs}
+    )
 
-set(simple_mmd_viewer_glfw_LIBRARIES
-    ${OPENGL_LIBRARY}
-    Saba
-)
-if(SABA_FORCE_GLFW_BUILD)
-    list(APPEND simple_mmd_viewer_glfw_LIBRARIES glfw)
+    ADD_CUSTOM_TARGET(link_target ALL
+                  COMMAND ${CMAKE_COMMAND} -E copy_directory
+                  ${CMAKE_CURRENT_SOURCE_DIR}/../viewer/Saba/Viewer/resource
+                  $<TARGET_FILE_DIR:simple_mmd_viewer>/resource
+                  )
 else()
-    list(APPEND simple_mmd_viewer_glfw_LIBRARIES ${GLFW_LIBRARIES})
-endif()
-if(UNIX)
-    list(APPEND simple_mmd_viewer_glfw_LIBRARIES ${CMAKE_DL_LIBS})
-endif()
-target_link_libraries(simple_mmd_viewer_glfw ${simple_mmd_viewer_glfw_LIBRARIES})
-target_link_libraries(simple_mmd_viewer ${simple_mmd_viewer_glfw_LIBRARIES})
+    find_package (EGL)
+    find_package (GLES)
 
-add_custom_command(TARGET simple_mmd_viewer_glfw POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${CMAKE_CURRENT_SOURCE_DIR}/../viewer/Saba/Viewer/resource
-    $<TARGET_FILE_DIR:simple_mmd_viewer_glfw>/resource
-)
-else()
-find_package (EGL)
-find_package (GLES)
+    # simple_mmd_viewer
+    add_executable(mmd
+        simple_mmd_viewer_fsl.cpp
+        resource_opengl/GL_ShaderProgram.cpp
+        resource_opengl/AppContext.cpp
+        resource_opengl/Model.cpp
+        resource_opengl/saba_gles2.cpp
+        resource_fsl/fsl_egl.c
+    )
 
-# simple_mmd_viewer
-add_executable(mmd
-    simple_mmd_viewer_fsl.cpp
-    resource_opengl/GL_ShaderProgram.cpp
-    resource_opengl/AppContext.cpp
-    resource_opengl/Model.cpp
-    resource_opengl/saba_gles2.cpp
-    resource_fsl/fsl_egl.c
-)
+    target_compile_definitions(mmd
+        PRIVATE
+            -D_GLIBCXX_USE_NANOSLEEP
+            -D_GLIBCXX_USE_SCHED_YIELD
+            -DEGL_API_FB
+            -DGL_GLEXT_PROTOTYPES
+    )
 
-target_compile_definitions(mmd
-    PRIVATE
-        -D_GLIBCXX_USE_NANOSLEEP
-        -D_GLIBCXX_USE_SCHED_YIELD
-        -DEGL_API_FB
-        -DGL_GLEXT_PROTOTYPES
-)
+    target_link_libraries(mmd
+        EGL::EGL
+        ${GLES_LIBRARY}
+        ${CMAKE_DL_LIBS}
+        ${CMAKE_THREAD_LIBS_INIT}
+        ${BULLET_LIBRARIES}
+        Saba
+    )
 
-target_link_libraries(mmd
-    EGL::EGL
-    ${GLES_LIBRARY}
-    ${CMAKE_DL_LIBS}
-    ${CMAKE_THREAD_LIBS_INIT}
-    ${BULLET_LIBRARIES}
-    Saba
-)
-
-install(TARGETS mmd DESTINATION home/root)
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../viewer/Saba/Viewer/resource DESTINATION home/root)
+    install(TARGETS mmd DESTINATION home/root)
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../viewer/Saba/Viewer/resource DESTINATION home/root)
 endif()
 
 # simple_mmd_viewer_dx11

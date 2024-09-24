@@ -7,3 +7,6 @@
 [submodule "external/bullet3"]
 	path = external/bullet3
 	url = https://github.com/bulletphysics/bullet3
+[submodule "external/gl3w"]
+	path = external/gl3w
+	url = https://github.com/skaslev/gl3w.git
