@@ -3,6 +3,14 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 project(saba LANGUAGES C CXX)
 
+# Check if CMake configure needs to be rerun
+if(DEFINED _NEED_RECONFIGURE AND _NEED_RECONFIGURE)
+  message(WARNING "CMake configuration needs to be rerun due to GLFW auto-detection!")
+  message(STATUS "To fix this, please run cmake configure again.")
+  # Clear the flag to avoid repeated warnings
+  unset(_NEED_RECONFIGURE CACHE)
+endif()
+
 set (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 set (SABA_BULLET_ROOT "" CACHE PATH "Bullet Root Directory")
@@ -20,14 +28,6 @@ find_package (Bullet)
 
 if (NOT CMAKE_TOOLCHAIN_FILE)
     find_package (OpenGL REQUIRED)
-    if (NOT SABA_FORCE_GLFW_BUILD)
-        set (GLFW_ROOT ${SABA_GLFW_ROOT})
-        find_package (GLFW)
-    endif ()
-
-    if (NOT GLFW_FOUND)
-        set (SABA_FORCE_GLFW_BUILD on CACHE BOOL "" FORCE)
-    endif ()
 endif ()
 
 if (NOT BULLET_FOUND)
@@ -46,11 +46,31 @@ if (NOT BULLET_FOUND)
     set(BULLET_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/external/bullet3/src)
 endif ()
 
-if (SABA_FORCE_GLFW_BUILD)
-    include_directories (${PROJECT_SOURCE_DIR}/external/glfw/include)
-else ()
-    include_directories (${GLFW_INCLUDE_DIR})
-endif ()
+# Use bundled GLFW to solve auto-detection problems
+message(STATUS "Using bundled GLFW library")
+
+# If the glfw subdirectory exists, use it directly
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/glfw")
+  set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "Build the GLFW example programs" FORCE)
+  set(GLFW_BUILD_TESTS OFF CACHE BOOL "Build the GLFW test programs" FORCE)
+  set(GLFW_BUILD_DOCS OFF CACHE BOOL "Build the GLFW documentation" FORCE)
+  set(GLFW_INSTALL OFF CACHE BOOL "Generate installation target" FORCE)
+  
+  # Add GLFW subdirectory
+  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/glfw)
+  
+  # Set GLFW-related variables
+  set(GLFW_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/glfw/include CACHE PATH "GLFW include directory")
+  set(GLFW_LIBRARIES glfw CACHE STRING "GLFW libraries")
+  set(GLFW_FOUND TRUE CACHE BOOL "GLFW found")
+  
+  message(STATUS "Bundled GLFW will be built with this project")
+else()
+  message(FATAL_ERROR "Could not find GLFW in ${CMAKE_CURRENT_SOURCE_DIR}/external/glfw")
+endif()
+
+# Ensure GLFW headers are included
+include_directories(${GLFW_INCLUDE_DIR})
 
 if (SABA_ENABLE_TEST)
     enable_testing()
@@ -91,22 +111,34 @@ add_subdirectory(external)
 
 add_subdirectory(src)
 
+# Only build window application when GLFW is available
 if (GLFW_FOUND)
+    message(STATUS "GLFW is available - building viewer components")
+    
+    # Add viewer and test subdirectories
     add_subdirectory(viewer)
     add_subdirectory(gtests)
 
+    # Build main window application
     add_executable(saba_viewer saba_viewer.cpp)
     set (saba_viewer_LIBRARIES SabaViewer)
+    
+    # On UNIX platforms, add dynamic link libraries
     if (UNIX)
         list (APPEND saba_viewer_LIBRARIES ${CMAKE_DL_LIBS})
     endif ()
+    
+    # Link libraries to window application
     target_link_libraries(saba_viewer ${saba_viewer_LIBRARIES})
 
+    # Copy resource files to build directory
     add_custom_command(TARGET saba_viewer POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_CURRENT_SOURCE_DIR}/viewer/Saba/Viewer/resource
         ${CMAKE_CURRENT_BINARY_DIR}/resource
     )
+else()
+    message(WARNING "GLFW not found and not building - viewer components will be disabled")
 endif()
 
 add_executable(mmd2obj mmd2obj.cpp)

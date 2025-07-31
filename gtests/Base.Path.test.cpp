@@ -5,7 +5,7 @@
 TEST(BaseTest, PathTest)
 {
 	// Combine
-#if _WIN32
+#if defined(_WIN32)
 	EXPECT_EQ(std::string("abc\\def\\efg"), saba::PathUtil::Combine({ "abc", "def\\", "", "efg" }));
 	EXPECT_EQ(std::string("abc\\def\\efg"), saba::PathUtil::Combine("abc", "def\\efg"));
 #else
@@ -14,7 +14,7 @@ TEST(BaseTest, PathTest)
 #endif
 
 	// DirectoryName
-#if _WIN32
+#if defined(_WIN32)
 	EXPECT_EQ(std::string("abc\\def"), saba::PathUtil::GetDirectoryName("abc\\def/efg.txt"));
 #else // _WIN32
 	EXPECT_EQ(std::string("abc\\def"), saba::PathUtil::GetDirectoryName("abc\\def/efg.txt"));
@@ -44,7 +44,7 @@ TEST(BaseTest, PathTest)
 	EXPECT_EQ(std::string(""), saba::PathUtil::GetExt(""));
 
 	// Normalize
-#if _WIN32
+#if defined(_WIN32)
 	EXPECT_EQ(std::string("a\\b\\c\\"), saba::PathUtil::Normalize("a/b\\c/"));
 #else // _WIN32
 	EXPECT_EQ(std::string("a/b/c/"), saba::PathUtil::Normalize("a\\b/c\\"));

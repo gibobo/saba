@@ -7,7 +7,7 @@
 
 #include <algorithm>
 
-#if _WIN32
+#if defined(_WIN32)
 #include <Windows.h>
 #elif __APPLE__
 #include <mach-o/dyld.h>
@@ -23,7 +23,7 @@ namespace saba
 {
 	namespace
 	{
-#if _WIN32
+#if defined(_WIN32)
 		const char PathDelimiter = '\\';
 		const char* PathDelimiters = "\\/";
 #else
@@ -35,7 +35,7 @@ namespace saba
 	std::string PathUtil::GetCWD()
 	{
 		std::string workDir;
-#if _WIN32
+#if defined(_WIN32)
 		DWORD sz = GetCurrentDirectoryW(0, nullptr);
 		std::vector<wchar_t> buffer(sz);
 		GetCurrentDirectory(sz, &buffer[0]);
@@ -50,7 +50,7 @@ namespace saba
 
 	std::string PathUtil::GetExecutablePath()
 	{
-#if _WIN32
+#if defined(_WIN32)
 		std::vector<wchar_t> modulePath(MAX_PATH);
 		if (GetModuleFileNameW(NULL, modulePath.data(), (DWORD)modulePath.size()) == 0)
 		{
@@ -160,7 +160,7 @@ namespace saba
 
 	std::string PathUtil::GetDelimiter()
 	{
-#if _WIN32
+#if defined(_WIN32)
 		return "\\";
 #else // _WIN32
 		return "/";
@@ -170,7 +170,7 @@ namespace saba
 	std::string PathUtil::Normalize(const std::string & path)
 	{
 		std::string result = path;
-#if _WIN32
+#if defined(_WIN32)
 		std::replace(result.begin(), result.end(), '/', '\\');
 #else // _WIN32
 		std::replace(result.begin(), result.end(), '\\', '/');

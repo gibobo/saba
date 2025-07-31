@@ -10,7 +10,7 @@
 
 #include <vector>
 
-#if _WIN32
+#if defined(_WIN32)
 #include <Windows.h>
 #else // _WIN32
 #include <unistd.h>
@@ -34,7 +34,7 @@ namespace saba
 		, m_shadowEnabled(false)
 		, m_mmdGroundShadowColor(0, 0, 0, 1)
 	{
-#if _WIN32
+#if defined(_WIN32)
 		DWORD sz = GetCurrentDirectoryW(0, nullptr);
 		std::vector<wchar_t> buffer(sz);
 		GetCurrentDirectory(sz, &buffer[0]);

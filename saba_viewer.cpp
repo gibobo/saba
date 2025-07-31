@@ -246,7 +246,7 @@ int SabaViewerMain(const std::vector<std::string>& args)
 }
 
 
-#if _WIN32
+#if defined(_WIN32)
 #include <Windows.h>
 #include <shellapi.h>
 #endif
@@ -254,7 +254,7 @@ int SabaViewerMain(const std::vector<std::string>& args)
 int main(int argc, char** argv)
 {
 	std::vector<std::string> args(argc);
-#if _WIN32
+#if defined(_WIN32)
 	{
 		WCHAR* cmdline = GetCommandLineW();
 		int wArgc;

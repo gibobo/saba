@@ -84,7 +84,7 @@ namespace saba
 		FILE* FppFileopen(const char* filename, void* userdata)
 		{
 			FILE* fp = NULL;
-#if _WIN32
+#if defined(_WIN32)
 			std::wstring wFilepath;
 			if (!TryToWString(filename, wFilepath))
 			{

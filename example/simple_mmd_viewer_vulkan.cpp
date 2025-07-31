@@ -1,5 +1,5 @@
 ﻿
-#if _WIN32
+#if defined(_WIN32)
 #include <Windows.h>
 #include <shellapi.h>
 #undef min
@@ -4385,7 +4385,7 @@ int main(int argc, char** argv)
 	}
 
 	std::vector<std::string> args(argc);
-#if _WIN32
+#if defined(_WIN32)
 	{
 		WCHAR* cmdline = GetCommandLineW();
 		int wArgc;

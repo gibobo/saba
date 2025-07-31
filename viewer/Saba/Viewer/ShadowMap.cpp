@@ -14,7 +14,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#if _WIN32
+#if defined(_WIN32)
 #undef min
 #undef max
 #endif

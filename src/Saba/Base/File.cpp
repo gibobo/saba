@@ -28,7 +28,7 @@ namespace saba
 		{
 			Close();
 		}
-#if _WIN32
+#if defined(_WIN32)
 		std::wstring wFilepath;
 		if (!TryToWString(filepath, wFilepath))
 		{
@@ -197,7 +197,7 @@ namespace saba
 		default:
 			return false;
 		}
-#if _WIN32
+#if defined(_WIN32)
 		if (_fseeki64(m_fp, offset, cOrigin) != 0)
 		{
 			m_badFlag = true;
@@ -219,7 +219,7 @@ namespace saba
 		{
 			return -1;
 		}
-#if _WIN32
+#if defined(_WIN32)
 		return (Offset)_ftelli64(m_fp);
 #else // _WIN32
 		return (Offset)ftell(m_fp);

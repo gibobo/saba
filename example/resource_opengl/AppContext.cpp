@@ -43,7 +43,7 @@ bool AppContext::Setup()
 	glBindTexture(GL_TEXTURE_2D, m_dummyShadowDepthTex);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, 1, 1, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
 	glBindTexture(GL_TEXTURE_2D, 0);
-#if _WIN32
+#if defined(_WIN32)
 	// Create Copy Transparent Window Shader (only windows)
 	m_copyTransparentWindowShader = CreateShaderProgram(
 		saba::PathUtil::Combine(m_shaderDir, "quad.vert"),
@@ -85,7 +85,7 @@ void AppContext::Clear()
 	}
 	m_dummyColorTex = 0;
 	m_dummyShadowDepthTex = 0;
-#if _WIN32
+#if defined(_WIN32)
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	if (m_transparentFbo != 0)
 	{
@@ -163,7 +163,7 @@ Texture AppContext::GetTexture(const std::string &texturePath)
 			stbi_image_free(image);
 			hasAlpha = true;
 		}
-#if _WIN32
+#if defined(_WIN32)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
 #endif
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -181,7 +181,7 @@ Texture AppContext::GetTexture(const std::string &texturePath)
 	}
 }
 
-#if _WIN32
+#if defined(_WIN32)
 void AppContext::SetupTransparentFBO()
 {
 	// Setup FBO
@@ -263,7 +263,7 @@ void AppContext::UpdateTransparentFBO()
 
 	glDisable(GL_DEPTH_TEST);
 	glBindVertexArray(m_copyVAO);
-#if _WIN32
+#if defined(_WIN32)
 	glUseProgram(m_copyTransparentWindowShader);
 #else // !_WIN32
 	glUseProgram(m_copyShader);

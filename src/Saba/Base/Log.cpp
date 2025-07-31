@@ -8,7 +8,7 @@
 
 #include <iostream>
 
-#if _WIN32
+#if defined(_WIN32)
 
 #include <Windows.h>
 
@@ -19,7 +19,7 @@ namespace saba
 	DefaultSink::DefaultSink()
 	{
 		m_defaultLogger = spdlog::stdout_color_mt("default");
-#if _WIN32
+#if defined(_WIN32)
 		SetConsoleOutputCP(CP_UTF8);
 #endif // _WIN32
 	}

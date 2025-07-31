@@ -8,13 +8,19 @@ add_executable(simple_mmd_viewer
     resource_opengl/AppContext.cpp
     resource_opengl/Model.cpp
     resource_opengl/saba_gles2.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../external/gl3w/src/gl3w.c
+    ${CMAKE_CURRENT_BINARY_DIR}/../external/gl3w/src/gl3w.c
+)
+
+target_compile_definitions(simple_mmd_viewer 
+    PRIVATE 
+        GL3W_AVAILABLE=1 
+        USE_GL3W=1
 )
 
 # simple_mmd_viewer_glfw
 add_executable(simple_mmd_viewer_glfw
     simple_mmd_viewer_glfw.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../external/gl3w/src/gl3w.c
+    ${CMAKE_CURRENT_BINARY_DIR}/../external/gl3w/src/gl3w.c
 )
 
 set(simple_mmd_viewer_glfw_LIBRARIES

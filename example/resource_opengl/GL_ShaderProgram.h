@@ -1,16 +1,14 @@
 #pragma once
 
 #include <string>
-#if _WIN32
-#include <GL/gl3w.h>
+#if defined(GL3W_AVAILABLE) || defined(USE_GL3W) || defined(_WIN32)
+    #include <GL/gl3w.h>
 #else
-#include <GLES2/gl2.h>
-#ifdef __linux__
-#include <GLES2/gl2ext.h>
-#define glGenVertexArrays glGenVertexArraysOES
-#define glBindVertexArray glBindVertexArrayOES
-#define glDeleteVertexArrays glDeleteVertexArraysOES
-#endif
+    #include <GLES2/gl2.h>
+    #include <GLES2/gl2ext.h>
+    #define glGenVertexArrays glGenVertexArraysOES
+    #define glBindVertexArray glBindVertexArrayOES
+    #define glDeleteVertexArrays 
 #endif
 
 GLuint CreateShader(GLenum shaderType, const std::string code);

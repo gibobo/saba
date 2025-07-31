@@ -1,7 +1,6 @@
 #include "./resource_opengl/saba_gles2.h"
-#include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
-#if _WIN32
+#if defined(_WIN32)
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3native.h>
 #endif // _WIN32
@@ -47,7 +46,7 @@ bool SampleMain(std::vector<std::string> &args)
         return false;
     }
 
-#if _WIN32 && (GLFW_VERSION_MAJOR >= 3) && (GLFW_VERSION_MINOR >= 3) && (GLFW_VERSION_REVISION >= 3)
+#if defined(_WIN32) && (GLFW_VERSION_MAJOR >= 3) && (GLFW_VERSION_MINOR >= 3) && (GLFW_VERSION_REVISION >= 3)
     // The color key was removed from glfw3.3.3. (Windows)
     if (mmd.IsEnableTransparent())
     {
@@ -119,7 +118,7 @@ bool SampleMain(std::vector<std::string> &args)
     return true;
 }
 
-#if _WIN32
+#if defined(_WIN32)
 #include <Windows.h>
 #include <shellapi.h>
 #endif
@@ -133,7 +132,7 @@ int main(int argc, char **argv)
     }
 
     std::vector<std::string> args(argc);
-#if _WIN32
+#if defined(_WIN32)
     {
         WCHAR *cmdline = GetCommandLineW();
         int wArgc;

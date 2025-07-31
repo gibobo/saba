@@ -85,7 +85,7 @@ set (
 )
 
 # gl3w
-set (GL3W_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/../external/gl3w/src/gl3w.c)
+set (GL3W_SOURCE ${CMAKE_CURRENT_BINARY_DIR}/../external/gl3w/src/gl3w.c)
 
 # imgui
 set (

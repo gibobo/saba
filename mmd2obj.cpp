@@ -300,7 +300,7 @@ bool MMD2Obj(const std::vector<std::string>& args)
 	return true;
 }
 
-#if _WIN32
+#if defined(_WIN32)
 #include <Windows.h>
 #include <shellapi.h>
 #endif
@@ -308,7 +308,7 @@ bool MMD2Obj(const std::vector<std::string>& args)
 int main(int argc, char** argv)
 {
 	std::vector<std::string> args(argc);
-#if _WIN32
+#if defined(_WIN32)
 	{
 		WCHAR* cmdline = GetCommandLineW();
 		int wArgc;

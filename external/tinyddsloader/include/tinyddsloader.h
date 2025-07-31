@@ -367,7 +367,7 @@ private:
 
 #ifdef TINYDDSLOADER_IMPLEMENTATION
 
-#if _WIN32
+#if defined(_WIN32)
 #undef min
 #undef max
 #endif  // _Win32
