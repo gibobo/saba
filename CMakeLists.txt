@@ -1,7 +1,7 @@
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.10...3.27)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-project(saba)
+project(saba LANGUAGES C CXX)
 
 set (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -15,7 +15,6 @@ option (SABA_FORCE_GLFW_BUILD "Force glfw build." off)
 option (SABA_ENABLE_EXAMPLE_VULKAN "Build vulakn's example." off)
 
 set (BULLET_ROOT ${SABA_BULLET_ROOT})
-MESSAGE( STATUS "BULLET_ROOT=${BULLET_ROOT}")
 
 find_package (Bullet)
 
@@ -65,7 +64,7 @@ set(CMAKE_CXX_STANDARD 14)
 
 include_directories(${PROJECT_SOURCE_DIR}/src)
 include_directories(${PROJECT_SOURCE_DIR}/viewer)
-include_directories(${PROJECT_SOURCE_DIR}/external/gl3w/include)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/external/gl3w/include)
 include_directories(${PROJECT_SOURCE_DIR}/external/gli/include)
 include_directories(${PROJECT_SOURCE_DIR}/external/glm/include)
 include_directories(${PROJECT_SOURCE_DIR}/external/stb/include)
