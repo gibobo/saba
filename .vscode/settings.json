@@ -2,7 +2,7 @@
     "cmake.debugConfig": {
         "args": [
             "-model",
-            "resource/pmx/takane_lui/takane_lui.pmx",
+            "resource/pmx/MiraiAkari/MiraiAkari_v1.0.pmx",
             "-vmd",
             "resource/vmd/Addiction_Tda.vmd",
             "-vmd",
@@ -92,5 +92,9 @@
         "xtr1common": "cpp",
         "xtree": "cpp",
         "xutility": "cpp"
-    }
+    },
+    "python.autoComplete.extraPaths": [
+        "${workspaceFolder}/sources/poky/bitbake/lib",
+        "${workspaceFolder}\\sources\\poky\\meta\\lib"
+    ]
 }
