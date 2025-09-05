@@ -31,6 +31,20 @@ struct AppContext
 	glm::mat4 m_projMat;
 	int m_screenWidth = 0;
 	int m_screenHeight = 0;
+	
+	// 遮擋剔除相關
+	bool m_enableOcclusionCulling = true; // 暫時禁用以進行調試
+	bool m_enableFrustumCulling = true;
+	int m_occlusionQueryFrameDelay = 2; // 延遲幾幀再檢查結果
+	bool m_showBoundingBoxes = false; // 除錯用
+	
+	// 著色器效能模式設定
+	enum class ShaderPerformanceMode {
+		ORIGINAL,     // 原始版本
+		OPTIMIZED,    // 優化版本  
+		BRANCHLESS    // 無分支版本
+	};
+	ShaderPerformanceMode m_shaderMode = ShaderPerformanceMode::ORIGINAL;
 
 	glm::vec3 m_lightColor = glm::vec3(1, 1, 1);
 	glm::vec3 m_lightDir = glm::vec3(-0.5f, -1.0f, -0.5f);

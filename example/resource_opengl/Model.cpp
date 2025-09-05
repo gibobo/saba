@@ -1,10 +1,116 @@
 #include "Model.h"
 #include "GL_ShaderProgram.h"
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <Saba/Base/Time.h>
 #include <Saba/Model/MMD/PMDModel.h>
 #include <Saba/Model/MMD/PMXModel.h>
 #include <Saba/Model/MMD/VMDCameraAnimation.h>
+#include <algorithm>
+#include <cfloat>
+
+//=============================================================================
+// 包圍盒和遮擋剔除實現
+//=============================================================================
+
+bool BoundingBox::IsInFrustum(const glm::mat4& mvpMatrix) const
+{
+    // 檢查包圍盒的8個頂點是否全部在視錐外
+    glm::vec3 corners[8] = {
+        glm::vec3(min.x, min.y, min.z),
+        glm::vec3(max.x, min.y, min.z),
+        glm::vec3(min.x, max.y, min.z),
+        glm::vec3(max.x, max.y, min.z),
+        glm::vec3(min.x, min.y, max.z),
+        glm::vec3(max.x, min.y, max.z),
+        glm::vec3(min.x, max.y, max.z),
+        glm::vec3(max.x, max.y, max.z)
+    };
+    
+    // 檢查每個裁剪平面
+    for (int plane = 0; plane < 6; ++plane) {
+        int outsideCount = 0;
+        
+        for (int i = 0; i < 8; ++i) {
+            glm::vec4 clipPos = mvpMatrix * glm::vec4(corners[i], 1.0f);
+            
+            // 檢查該頂點是否在當前裁剪平面外
+            bool outside = false;
+            switch (plane) {
+                case 0: outside = clipPos.x < -clipPos.w; break; // 左
+                case 1: outside = clipPos.x > clipPos.w; break;  // 右
+                case 2: outside = clipPos.y < -clipPos.w; break; // 下
+                case 3: outside = clipPos.y > clipPos.w; break;  // 上
+                case 4: outside = clipPos.z < -clipPos.w; break; // 近
+                case 5: outside = clipPos.z > clipPos.w; break;  // 遠
+            }
+            
+            if (outside) outsideCount++;
+        }
+        
+        // 如果所有8個頂點都在某個平面外，則整個包圍盒都被剔除
+        if (outsideCount == 8) {
+            return false;
+        }
+    }
+    
+    return true; // 包圍盒至少部分在視錐內
+}
+
+void BoundingBox::UpdateBounds(const glm::vec3& point)
+{
+    min.x = std::min(min.x, point.x);
+    min.y = std::min(min.y, point.y);
+    min.z = std::min(min.z, point.z);
+    
+    max.x = std::max(max.x, point.x);
+    max.y = std::max(max.y, point.y);
+    max.z = std::max(max.z, point.z);
+}
+
+void OcclusionQuery::BeginQuery()
+{
+    if (queryId == 0) {
+        glGenQueries(1, &queryId);
+    }
+    
+    glBeginQuery(GL_ANY_SAMPLES_PASSED, queryId);
+    queryInProgress = true;
+}
+
+void OcclusionQuery::EndQuery()
+{
+    if (queryInProgress) {
+        glEndQuery(GL_ANY_SAMPLES_PASSED);
+        queryInProgress = false;
+    }
+}
+
+bool OcclusionQuery::CheckResult()
+{
+    if (queryId == 0 || queryInProgress) {
+        return false; // 查詢尚未完成
+    }
+    
+    GLint available = 0;
+    glGetQueryObjectiv(queryId, GL_QUERY_RESULT_AVAILABLE, &available);
+    
+    if (available) {
+        GLint result = 0;
+        glGetQueryObjectiv(queryId, GL_QUERY_RESULT, &result);
+        isOccluded = (result == 0);
+        
+        if (isOccluded) {
+            framesSinceVisible++;
+        } else {
+            framesSinceVisible = 0;
+        }
+        
+        return true; // 結果可用
+    }
+    
+    return false; // 結果尚未準備好
+}
 
 bool Model::Setup(AppContext &appContext)
 {
@@ -127,6 +233,12 @@ bool Model::Setup(AppContext &appContext)
 		}
 		m_materials.emplace_back(std::move(mat));
 	}
+	
+	// 計算初始包圍盒
+	UpdateBoundingBox();
+	
+	// 初始化遮擋查詢
+	m_shouldRender = true; // 預設為可見
 
 	return true;
 }
@@ -169,6 +281,197 @@ void Model::Clear()
 	m_mmdVAO = 0;
 	m_mmdEdgeVAO = 0;
 	m_mmdGroundShadowVAO = 0;
+	
+	// 清理遮擋查詢
+	if (m_occlusionQuery.queryId != 0) {
+		glDeleteQueries(1, &m_occlusionQuery.queryId);
+		m_occlusionQuery.queryId = 0;
+	}
+}
+
+//=============================================================================
+// 遮擋剔除實現
+//=============================================================================
+
+void Model::UpdateBoundingBox()
+{
+	if (m_mmdModel == nullptr) return;
+	
+	m_boundingBox.Reset();
+	
+	// 計算模型的包圍盒
+	size_t vtxCount = m_mmdModel->GetVertexCount();
+	const glm::vec3* positions = m_mmdModel->GetUpdatePositions();
+	
+	if (positions == nullptr || vtxCount == 0) {
+		// 如果沒有更新位置，嘗試獲取原始位置
+		const glm::vec3* origPositions = m_mmdModel->GetPositions();
+		if (origPositions != nullptr && vtxCount > 0) {
+			positions = origPositions;
+		} else {
+			// 如果仍然沒有頂點數據，設置一個默認的大包圍盒
+			m_boundingBox.min = glm::vec3(-10.0f);
+			m_boundingBox.max = glm::vec3(10.0f);
+			return;
+		}
+	}
+	
+	// 檢查第一個頂點是否為零，如果所有頂點都是零，使用預設包圍盒
+	bool allZero = true;
+	for (size_t i = 0; i < std::min(vtxCount, (size_t)100); ++i) {
+		if (positions[i].x != 0.0f || positions[i].y != 0.0f || positions[i].z != 0.0f) {
+			allZero = false;
+			break;
+		}
+	}
+	
+	if (allZero) {
+		// 使用一個合理的包圍盒（大約人形模型的大小）
+		m_boundingBox.min = glm::vec3(-1.0f, 0.0f, -1.0f);
+		m_boundingBox.max = glm::vec3(1.0f, 3.0f, 1.0f);
+		return;
+	}
+	
+	for (size_t i = 0; i < vtxCount; ++i) {
+		m_boundingBox.UpdateBounds(positions[i]);
+	}
+	
+	// 如果需要，也可以為每個子網格計算包圍盒
+	if (m_subMeshBounds.size() != m_mmdModel->GetSubMeshCount()) {
+		m_subMeshBounds.resize(m_mmdModel->GetSubMeshCount());
+	}
+	
+	size_t subMeshCount = m_mmdModel->GetSubMeshCount();
+	for (size_t i = 0; i < subMeshCount; ++i) {
+		const auto& subMesh = m_mmdModel->GetSubMeshes()[i];
+		m_subMeshBounds[i].Reset();
+		
+		// 為子網格計算包圍盒
+		for (size_t j = subMesh.m_beginIndex; j < subMesh.m_beginIndex + subMesh.m_vertexCount; ++j) {
+			if (j < vtxCount) {
+				m_subMeshBounds[i].UpdateBounds(positions[j]);
+			}
+		}
+	}
+}
+
+bool Model::PerformFrustumCulling(const AppContext& appContext)
+{
+	if (!appContext.m_enableFrustumCulling) {
+		return true; // 視錐剔除被禁用
+	}
+	
+	// 檢查包圍盒是否有效
+	if (m_boundingBox.min.x > m_boundingBox.max.x) {
+		// 包圍盒無效，預設為可見
+		return true;
+	}
+	
+	// 計算MVP矩陣
+	glm::mat4 world = glm::mat4(1.0f); // MMD模型通常在世界座標原點
+	glm::mat4 mvp = appContext.m_projMat * appContext.m_viewMat * world;
+	
+	// 檢查主包圍盒是否在視錐內
+	bool inFrustum = m_boundingBox.IsInFrustum(mvp);
+	
+	return inFrustum;
+}
+
+void Model::PerformOcclusionCulling(const AppContext& appContext)
+{
+	if (!appContext.m_enableOcclusionCulling) {
+		return; // 不改變 m_shouldRender 狀態
+	}
+	
+	// 在單物體場景中，遮擋剔除的效果有限，因此保持物體可見
+	// 這是一個簡化的實現，適用於演示目的
+	m_shouldRender = true;
+	
+	// 可選：仍然進行查詢以測試系統
+	if (m_shouldRender) {
+		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+		
+		m_occlusionQuery.BeginQuery();
+		DrawBoundingBox(appContext);
+		m_occlusionQuery.EndQuery();
+		
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		
+		// 檢查查詢結果但不用於剔除決策
+		m_occlusionQuery.CheckResult();
+	}
+}
+
+void Model::DrawBoundingBox(const AppContext& appContext)
+{
+	// OpenGL ES 2.0 兼容的包圍盒渲染
+	auto& bbox = m_boundingBox;
+	glm::vec3 min = bbox.min;
+	glm::vec3 max = bbox.max;
+	
+	// 定義立方體的8個頂點
+	GLfloat vertices[] = {
+		// 底面4個頂點
+		min.x, min.y, min.z,  // 0
+		max.x, min.y, min.z,  // 1
+		max.x, min.y, max.z,  // 2
+		min.x, min.y, max.z,  // 3
+		// 頂面4個頂點
+		min.x, max.y, min.z,  // 4
+		max.x, max.y, min.z,  // 5
+		max.x, max.y, max.z,  // 6
+		min.x, max.y, max.z   // 7
+	};
+	
+	if (appContext.m_showBoundingBoxes) {
+		// 除錯模式：渲染可見的包圍盒線框
+		GLushort lineIndices[] = {
+			// 底面4條邊
+			0, 1,  1, 2,  2, 3,  3, 0,
+			// 頂面4條邊
+			4, 5,  5, 6,  6, 7,  7, 4,
+			// 垂直4條邊
+			0, 4,  1, 5,  2, 6,  3, 7
+		};
+		
+		glDisable(GL_DEPTH_TEST);
+		glLineWidth(2.0f);
+		
+		// 使用 vertex attribute 0 (通常是位置)
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, vertices);
+		
+		glDrawElements(GL_LINES, 24, GL_UNSIGNED_SHORT, lineIndices);
+		
+		glDisableVertexAttribArray(0);
+		glEnable(GL_DEPTH_TEST);
+		glLineWidth(1.0f);
+	} else {
+		// 遮擋測試模式：渲染實體包圍盒
+		// 注意：顏色寫入已在調用方關閉，這裡只需要正常渲染立方體
+		GLushort boxIndices[] = {
+			// 前面 (z = max.z)
+			3, 2, 6,  6, 7, 3,
+			// 後面 (z = min.z)
+			1, 0, 4,  4, 5, 1,
+			// 左面 (x = min.x)
+			0, 3, 7,  7, 4, 0,
+			// 右面 (x = max.x)
+			2, 1, 5,  5, 6, 2,
+			// 底面 (y = min.y)
+			0, 1, 2,  2, 3, 0,
+			// 頂面 (y = max.y)
+			7, 6, 5,  5, 4, 7
+		};
+		
+		// 使用 vertex attribute 0
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, vertices);
+		
+		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, boxIndices);
+		
+		glDisableVertexAttribArray(0);
+	}
 }
 
 void Model::UpdateAnimation(const AppContext &appContext)
@@ -183,17 +486,43 @@ void Model::Update(const AppContext &appContext)
 	m_mmdModel->Update();
 
 	size_t vtxCount = m_mmdModel->GetVertexCount();
+	
+	// 先假設模型可見，然後進行剔除測試
+	m_shouldRender = true;
+	
+	// 總是更新包圍盒（在模型更新後）
+	UpdateBoundingBox();
+	
+	// 執行視錐剔除
+	bool inFrustum = PerformFrustumCulling(appContext);
+	if (!inFrustum) {
+		m_shouldRender = false;
+		return; // 提早退出，不更新GPU緩衝區
+	}
+	
+	// 執行遮擋剔除（異步）
+	PerformOcclusionCulling(appContext);
+	
+	// 批量更新所有緩衝區以減少GPU狀態切換
 	glBindBuffer(GL_ARRAY_BUFFER, m_posVBO);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(glm::vec3) * vtxCount, m_mmdModel->GetUpdatePositions());
+	
 	glBindBuffer(GL_ARRAY_BUFFER, m_norVBO);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(glm::vec3) * vtxCount, m_mmdModel->GetUpdateNormals());
+	
 	glBindBuffer(GL_ARRAY_BUFFER, m_uvVBO);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(glm::vec2) * vtxCount, m_mmdModel->GetUpdateUVs());
+	
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 void Model::Draw(const AppContext &appContext)
 {
+	// 遮擋剔除檢查：如果物件被剔除，跳過渲染
+	if (!m_shouldRender) {
+		return;
+	}
+
 	const auto &view = appContext.m_viewMat;
 	const auto &proj = appContext.m_projMat;
 
@@ -203,6 +532,11 @@ void Model::Draw(const AppContext &appContext)
 	auto wvit = glm::mat3(view * world);
 	wvit = glm::inverse(wvit);
 	wvit = glm::transpose(wvit);
+	
+	// 如果啟用了包圍盒顯示，先渲染包圍盒
+	if (appContext.m_showBoundingBoxes) {
+		DrawBoundingBox(appContext);
+	}
 
 	glActiveTexture(GL_TEXTURE0 + 3);
 	glBindTexture(GL_TEXTURE_2D, appContext.m_dummyShadowDepthTex);

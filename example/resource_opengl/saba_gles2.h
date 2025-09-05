@@ -37,4 +37,20 @@ public:
 	bool IsEnableTransparent(void);
 	void SetupTransparent(void);
 	void UpdateTransparent(void);
+	
+	// 遮擋剔除控制
+	void SetOcclusionCullingEnabled(bool enabled);
+	void SetFrustumCullingEnabled(bool enabled);
+	void SetBoundingBoxesVisible(bool show);
+	
+	bool IsOcclusionCullingEnabled() const;
+	bool IsFrustumCullingEnabled() const;
+	bool AreBoundingBoxesVisible() const;
+	
+	// 著色器效能模式控制
+	void SwitchShaderPerformanceMode();
+	const char* GetCurrentShaderModeName() const;
+	
+	int GetVisibleModelCount() const;
+	int GetTotalModelCount() const { return models.size(); }
 };

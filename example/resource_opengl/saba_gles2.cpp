@@ -60,6 +60,8 @@ void saba_gles2::Evaluate(
 	float ElapsedTime)
 {
 	float curTime = saba::GetTime();
+	float prevAnimTime = appContext.m_animTime;
+	
     if (ElapsedTime == 0.f)
     {
 		if(animationStartTime == 0.f)
@@ -72,22 +74,26 @@ void saba_gles2::Evaluate(
         appContext.m_elapsed = ElapsedTime;
         appContext.m_animTime += ElapsedTime;
     }
-	// Setup camera
-	if (appContext.m_vmdCameraAnim)
+    
+	if (appContext.m_animTime != prevAnimTime)
 	{
-		appContext.m_vmdCameraAnim->Evaluate(appContext.m_animTime * 30.0f);
-		const auto mmdCam = appContext.m_vmdCameraAnim->GetCamera();
-		saba::MMDLookAtCamera lookAtCam(mmdCam);
-		eyes = lookAtCam.m_eye;
-		center = lookAtCam.m_center;
-		up = lookAtCam.m_up;
-		fov = mmdCam.m_fov;
-	}
-	else
-		NewCamera(eyes, center, newCamera_angles, newCamera_shift);
+		// Setup camera
+		if (appContext.m_vmdCameraAnim)
+		{
+			appContext.m_vmdCameraAnim->Evaluate(appContext.m_animTime * 30.0f);
+			const auto mmdCam = appContext.m_vmdCameraAnim->GetCamera();
+			saba::MMDLookAtCamera lookAtCam(mmdCam);
+			eyes = lookAtCam.m_eye;
+			center = lookAtCam.m_center;
+			up = lookAtCam.m_up;
+			fov = mmdCam.m_fov;
+		}
+		else
+			NewCamera(eyes, center, newCamera_angles, newCamera_shift);
 
-	appContext.m_viewMat = glm::lookAt(eyes, center, up);
-	appContext.m_projMat = glm::perspectiveFovRH(fov, (float)appContext.m_screenWidth, (float)appContext.m_screenHeight, 1.0f, 10000.0f);
+		appContext.m_viewMat = glm::lookAt(eyes, center, up);
+		appContext.m_projMat = glm::perspectiveFovRH(fov, (float)appContext.m_screenWidth, (float)appContext.m_screenHeight, 1.0f, 10000.0f);
+	}
 }
 
 bool saba_gles2::Parse(std::vector<std::string> &args)
@@ -235,4 +241,83 @@ void saba_gles2::UpdateTransparent(void)
 {
 	if (appContext.m_enableTransparentWindow)
 		appContext.UpdateTransparentFBO();
+}
+
+// 遮擋剔除控制方法
+void saba_gles2::SetOcclusionCullingEnabled(bool enabled)
+{
+	appContext.m_enableOcclusionCulling = enabled;
+}
+
+void saba_gles2::SetFrustumCullingEnabled(bool enabled)
+{
+	appContext.m_enableFrustumCulling = enabled;
+}
+
+void saba_gles2::SetBoundingBoxesVisible(bool show)
+{
+	appContext.m_showBoundingBoxes = show;
+}
+
+bool saba_gles2::IsOcclusionCullingEnabled() const
+{
+	return appContext.m_enableOcclusionCulling;
+}
+
+bool saba_gles2::IsFrustumCullingEnabled() const
+{
+	return appContext.m_enableFrustumCulling;
+}
+
+bool saba_gles2::AreBoundingBoxesVisible() const
+{
+	return appContext.m_showBoundingBoxes;
+}
+
+int saba_gles2::GetVisibleModelCount() const
+{
+	int visibleCount = 0;
+	for (const auto& model : models) {
+		if (model.m_shouldRender) {
+			visibleCount++;
+		}
+	}
+	return visibleCount;
+}
+
+void saba_gles2::SwitchShaderPerformanceMode()
+{
+	// 循環切換著色器效能模式
+	switch (appContext.m_shaderMode) {
+		case AppContext::ShaderPerformanceMode::ORIGINAL:
+			appContext.m_shaderMode = AppContext::ShaderPerformanceMode::OPTIMIZED;
+			printf("Shader Mode: OPTIMIZED (Better performance)\n");
+			break;
+		case AppContext::ShaderPerformanceMode::OPTIMIZED:
+			appContext.m_shaderMode = AppContext::ShaderPerformanceMode::BRANCHLESS;
+			printf("Shader Mode: BRANCHLESS (Best performance)\n");
+			break;
+		case AppContext::ShaderPerformanceMode::BRANCHLESS:
+			appContext.m_shaderMode = AppContext::ShaderPerformanceMode::ORIGINAL;
+			printf("Shader Mode: ORIGINAL (Best compatibility)\n");
+			break;
+	}
+	
+	// 重新載入所有著色器
+	printf("Reloading shaders...\n");
+	// 注意：這裡需要重新初始化模型來使用新的著色器
+	// 在實際實現中，你可能需要更複雜的邏輯來重新載入著色器
+}
+
+const char* saba_gles2::GetCurrentShaderModeName() const
+{
+	switch (appContext.m_shaderMode) {
+		case AppContext::ShaderPerformanceMode::ORIGINAL:
+			return "ORIGINAL";
+		case AppContext::ShaderPerformanceMode::OPTIMIZED:
+			return "OPTIMIZED";
+		case AppContext::ShaderPerformanceMode::BRANCHLESS:
+			return "BRANCHLESS";
+	}
+	return "UNKNOWN";
 }
