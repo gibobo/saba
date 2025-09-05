@@ -24,6 +24,7 @@ private:
 	glm::vec2 newCamera_angles = glm::vec2(0.f);
 	glm::vec3 newCamera_shift = glm::vec3(0.f);
 	float fov = glm::radians(30.f);
+	float animationStartTime = 0.f;
 
 public:
 	~saba_gles2(void);
@@ -31,7 +32,7 @@ public:
 	bool Setup(void);
 	void Draw(void);
 	void SetScreenSize(int width, int height);
-	void Evaluate(float ElapsedTime = 0, float fps = 30.0);
+	void Evaluate(float ElapsedTime = 0.0f);
 	int GetMsaaSamples(void);
 	bool IsEnableTransparent(void);
 	void SetupTransparent(void);

@@ -74,15 +74,8 @@ bool SampleMain(std::vector<std::string> &args)
 
     double fpsTime = GetTime();
     int fpsFrame = 0;
-    float saveTime = (float)GetTime();
     while (!glfwWindowShouldClose(window))
     {
-        float time = (float)GetTime();
-        float elapsed = time - saveTime;
-        if (elapsed > 1.0 / 30.0)
-            elapsed = 1.0 / 30.0;
-        saveTime = time;
-
         mmd.SetupTransparent();
         glClearColor(1.0f, 0.8f, 0.75f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -91,7 +84,7 @@ bool SampleMain(std::vector<std::string> &args)
         glfwGetFramebufferSize(window, &width, &height);
         glViewport(0, 0, width, height);
         mmd.SetScreenSize(width, height);
-        mmd.Evaluate(elapsed);
+        mmd.Evaluate();
         mmd.Draw();
         mmd.UpdateTransparent();
 

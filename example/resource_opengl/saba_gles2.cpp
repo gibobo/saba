@@ -1,5 +1,6 @@
 #include "saba_gles2.h"
 #include <Saba/Base/Path.h>
+#include <Saba/Base/Time.h>
 #include <Saba/Model/MMD/PMXModel.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
@@ -56,16 +57,25 @@ void saba_gles2::Draw(void)
 }
 
 void saba_gles2::Evaluate(
-	float ElapsedTime,
-	float fps)
+	float ElapsedTime)
 {
-	appContext.m_elapsed = ElapsedTime;
-	appContext.m_animTime += ElapsedTime;
-
+	float curTime = saba::GetTime();
+    if (ElapsedTime == 0.f)
+    {
+		if(animationStartTime == 0.f)
+			animationStartTime = curTime;
+        appContext.m_elapsed = curTime - appContext.m_animTime;
+        appContext.m_animTime = curTime - animationStartTime;
+    }
+    else
+    {
+        appContext.m_elapsed = ElapsedTime;
+        appContext.m_animTime += ElapsedTime;
+    }
 	// Setup camera
 	if (appContext.m_vmdCameraAnim)
 	{
-		appContext.m_vmdCameraAnim->Evaluate(appContext.m_animTime * fps);
+		appContext.m_vmdCameraAnim->Evaluate(appContext.m_animTime * 30.0f);
 		const auto mmdCam = appContext.m_vmdCameraAnim->GetCamera();
 		saba::MMDLookAtCamera lookAtCam(mmdCam);
 		eyes = lookAtCam.m_eye;
